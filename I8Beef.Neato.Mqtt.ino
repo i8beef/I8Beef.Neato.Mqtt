@@ -2,12 +2,13 @@
 #include <PubSubClient.h>
 
 // Update with suitable values
-const char* SSID = "........";
-const char* SSID_PASSWORD = "........";
-const char* MQTT_SERVER = "192.168.1.152";
+const char* SSID = "";
+const char* SSID_PASSWORD = "";
+const char* MQTT_SERVER = "";
 const char* MQTT_USER = "";
 const char* MQTT_PASSWORD = "";
-const char* MQTT_TOPIC = "neato/botvac/default";
+const char* MQTT_TOPIC_LAST_SERIAL = "neato/botvac/default/serial/lastResponse";
+const char* MQTT_TOPIC_SUBSCRIBE = "neato/botvac/default/+/set";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -16,7 +17,7 @@ int maxBuffer = 8192;
 int bufferSize = 0;
 uint8_t serialBuffer[8193];
 
-void botDissconect() {
+void botDisconect() {
   // always disable testmode on disconnect
   Serial.println("TestMode off");
 }
@@ -42,7 +43,7 @@ void serialEvent() {
     // limit should not be reached under normal conditions
     if (bufferSize > maxBuffer - 1 || in == '\x1A') {
       // Publish message on serial output
-      client.publish(strcat(MQTT_TOPIC, "/serial/lastResponse"), serialBuffer);
+      client.publish(MQTT_TOPIC_LAST_SERIAL, (char*)serialBuffer);
 
       serialBuffer[0] = '\0';
       bufferSize = 0;
@@ -70,13 +71,11 @@ void setup_wifi() {
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
-  // TODO: Add per topic commands
-  switch (topic) {
-    default:
-      // Dangerous for obvious reasons, assumes complete exposure of all commands
-      Serial.printf("%s\n", payload);
-      break;
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
   }
+  
+  Serial.println();
 }
 
 void reconnect() {
@@ -84,7 +83,7 @@ void reconnect() {
   while (!client.connected()) {
     // Attempt to connect, remove user / pass if not needed
     if (client.connect("ESP8266Client", MQTT_USER, MQTT_PASSWORD)) {
-      client.subscribe(strcat(MQTT_TOPIC, "/#/set"));
+      client.subscribe(MQTT_TOPIC_SUBSCRIBE);
     } else {
       // Wait 5 seconds before retrying
       delay(5000);
