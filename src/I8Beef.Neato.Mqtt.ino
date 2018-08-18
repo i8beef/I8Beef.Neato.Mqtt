@@ -14,6 +14,7 @@
 #define MQTT_USER ""
 #define MQTT_PASSWORD ""
 #define MQTT_TOPIC_SUBSCRIBE "neato/botvac/default/+/set"
+#define MQTT_WILL_TOPIC "neato/botvac/default/connected"
 
 // Timer
 unsigned long interval = 30000;
@@ -152,8 +153,9 @@ void mqttReconnect() {
   // Loop until we're reconnected
   while (!mqttClient.connected() && retries < 5) {
     // Attempt to connect, remove user / pass if not needed
-    if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASSWORD)) {
+    if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASSWORD, MQTT_WILL_TOPIC, 0, true, "0")) {
       mqttClient.subscribe(MQTT_TOPIC_SUBSCRIBE);
+      mqttClient.publish(MQTT_WILL_TOPIC, "2", true);
     } else {
       // Wait 5 seconds before retrying
       retries++;
